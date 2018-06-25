@@ -6,7 +6,7 @@ Dataset URL - https://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+
 - dimensional_modeling/dimentional_design.xml - Draw.io file
 
 # Dimensional Model //TODO: update diagram
-![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design.png)
+![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design_V1.png)
 
 # Build Data Warehouse
 ## Step 01 - Create Database and Tables for staging area of Data Warehouse
