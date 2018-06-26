@@ -9,7 +9,7 @@ Dataset URL - https://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+
 ![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design.png)
 
 # Build Data Warehouse
-## Step 01 - Create Database and Tables for staging area of Data Warehouse
+## Step 01 - Create Database and Tables for Staging Area
 Use following query to create the database named '*diabetes_dwh_staging*' and tables
 - Database: diabetes_dwh_staging
 - Tables:
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `diabetes_DWH_staging`.`discharge_disposition` (
 ENGINE = InnoDB;
 ```
 
-## Step 02 - Extract (Import CSV Dataset to MySQL Database) to Staging Area
+## Step 02 - Extract (Import CSV Dataset) to Staging Area
 Use the following query to import data to '*datase*' table. Use absolute path to the '*diabetic_data.csv*' file as `<dataset_directory>/diabetic_data.csv` in the query.
 **In windows use '/' characters instead of '\\' as path name separator character** (eg: instead of '*D:\dwh\diabetic_data.csv*' use '*D:/dwh/diabetic_data.csv*')
 
