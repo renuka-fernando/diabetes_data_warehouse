@@ -5,7 +5,7 @@ Dataset URL - https://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+
 - data_warehouse.mwb - MySQL Workbench model file
 - dimensional_modeling/dimentional_design.xml - Draw.io file
 
-# Dimensional Model //TODO: update diagram
+# Dimensional Model
 ![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design.png)
 
 # Build Data Warehouse
