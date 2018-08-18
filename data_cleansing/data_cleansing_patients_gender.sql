@@ -1,4 +1,4 @@
-SELECT distinct `gender`
+SELECT DISTINCT `gender`
 FROM `diabetes_dwh_staging`.`dataset`;
 
 CREATE OR REPLACE VIEW `diabetes_dwh_staging`.`dirty_patient_gender` AS

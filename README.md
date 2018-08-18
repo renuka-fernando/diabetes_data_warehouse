@@ -266,7 +266,7 @@ SELECT `encounter_id`, `patient_nbr`, `race`, `gender`
 FROM `diabetes_dwh_staging`.`dirty_patient_gender`;
 ```
 
-There were 7 dirty records and cleaned with selecting most frequent and latest data.
+There were 7 dirty records with 3 patients and cleaned with selecting most frequent and latest data.
 ```sql
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `gender` = 'Male'
