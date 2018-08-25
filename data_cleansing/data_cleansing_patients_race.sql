@@ -22,12 +22,12 @@ ORDER BY `patient_nbr`, `encounter_id`;
 -- Set race as Caucasian
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'Caucasian'
-WHERE `patient_nbr` IN (453267, 1041291);
+WHERE `patient_nbr` IN (1553220, 'FILL THIS...');
 
 -- Set race as AfricanAmerican
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'AfricanAmerican'
-WHERE `patient_nbr` IN ('FILL THIS...');
+WHERE `patient_nbr` IN (6919587, 'FILL THIS...');
 
 -- Set race as Other
 UPDATE `diabetes_dwh_staging`.`dataset`

@@ -243,6 +243,19 @@ ENGINE = InnoDB;
 ```
 
 ## Step 04 - Data Cleansing
+### Horizontal Filtering
+Some importants attributes that should be considered are missing in the dataset. Lets discard them.
+```sql
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `payer_code` = '?';
+
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `medical_specialty` = '?';
+
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `race` = '?';
+```
+
 ### Cleansing Patient Data
 
 - Select diry data wrt gender of the patient
@@ -294,17 +307,17 @@ WHERE `patient_nbr` in (
 )
 ORDER BY `patient_nbr`, `encounter_id`;
 ```
-There were 716 dirty records with 249 patients and cleaned with selecting most frequent and latest data.
+There were 167 dirty records with 51 patients and cleaned with selecting most frequent and latest data.
 ```sql
 -- Set race as Caucasian
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'Caucasian'
-WHERE `patient_nbr` IN (453267, 1041291);
+WHERE `patient_nbr` IN (1553220, 'FILL THIS...');
 
 -- Set race as AfricanAmerican
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'AfricanAmerican'
-WHERE `patient_nbr` IN ('FILL THIS...');
+WHERE `patient_nbr` IN (6919587, 'FILL THIS...');
 
 -- Set race as Other
 UPDATE `diabetes_dwh_staging`.`dataset`
