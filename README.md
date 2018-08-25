@@ -254,7 +254,10 @@ WHERE `medical_specialty` = '?';
 
 DELETE FROM `diabetes_dwh_staging`.`dataset`
 WHERE `race` = '?';
+
+SELECT COUNT(*) FROM `diabetes_dwh_staging`.`dataset`;
 ```
+We have 27140 data records.
 
 ### Cleansing Patient Data
 
@@ -335,7 +338,36 @@ SET `race` = 'Hispanic'
 WHERE `patient_nbr` IN ('FILL THIS...');
 ```
 
-## Step 05 - Loading Data
+## Step 05 - Transforming
+Transform primary, secondary and additional diagnosis based on "**International Statistical Classification of Diseases and Related Health Problems**"
+- Visit http://icd9.chrisendres.com/index.php?action=contents for Diseases and Injuries Tabular Index
+
+Values are stored to the file **data_transforming/diseases_and_injuries_tabular_index.csv**.
+
+| id | disease                                                                                            | code_letter | code_from | code_to |
+|----|----------------------------------------------------------------------------------------------------|-------------|-----------|---------|
+|  1 | INFECTIOUS AND PARASITIC DISEASES                                                                  |             |         1 |     139 |
+|  2 | NEOPLASMS                                                                                          |             |       140 |     239 |
+|  3 | ENDOCRINE, NUTRITIONAL AND METABOLIC DISEASES, AND IMMUNITY DISORDERS                              |             |       240 |     279 |
+|  4 | DISEASES OF THE BLOOD AND BLOOD-FORMING ORGANS                                                     |             |       280 |     289 |
+|  5 | MENTAL DISORDERS                                                                                   |             |       290 |     319 |
+|  6 | DISEASES OF THE NERVOUS SYSTEM AND SENSE ORGANS                                                    |             |       320 |     389 |
+|  7 | DISEASES OF THE CIRCULATORY SYSTEM                                                                 |             |       390 |     459 |
+|  8 | DISEASES OF THE RESPIRATORY SYSTEM                                                                 |             |       460 |     519 |
+|  9 | DISEASES OF THE DIGESTIVE SYSTEM                                                                   |             |       520 |     579 |
+| 10 | DISEASES OF THE GENITOURINARY SYSTEM                                                               |             |       580 |     629 |
+| 11 | COMPLICATIONS OF PREGNANCY, CHILDBIRTH, AND THE PUERPERIUM                                         |             |       630 |     679 |
+| 12 | DISEASES OF THE SKIN AND SUBCUTANEOUS TISSUE                                                       |             |       680 |     709 |
+| 13 | DISEASES OF THE MUSCULOSKELETAL SYSTEM AND CONNECTIVE TISSUE                                       |             |       710 |     739 |
+| 14 | CONGENITAL ANOMALIES                                                                               |             |       740 |     759 |
+| 15 | CERTAIN CONDITIONS ORIGINATING IN THE PERINATAL PERIOD                                             |             |       760 |     779 |
+| 16 | SYMPTOMS, SIGNS, AND ILL-DEFINED CONDITIONS                                                        |             |       780 |     799 |
+| 17 | INJURY AND POISONING                                                                               |             |       800 |     999 |
+| 18 | SUPPLEMENTARY CLASSIFICATION OF FACTORS INFLUENCING HEALTH STATUS AND CONTACT WITH HEALTH SERVICES | V           |         1 |      89 |
+| 19 | SUPPLEMENTARY CLASSIFICATION OF EXTERNAL CAUSES OF INJURY AND POISONING                            | E           |       800 |     999 |
+
+
+## Step 06 - Loading Data
 ### Loading to Patient Dimension
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_patient` (`patient_number`, `race`, `gender`, `age`)
