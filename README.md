@@ -315,27 +315,27 @@ There were 167 dirty records with 51 patients and cleaned with selecting most fr
 -- Set race as Caucasian
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'Caucasian'
-WHERE `patient_nbr` IN (1553220, 'FILL THIS...');
+WHERE `patient_nbr` IN (1553220, 23724792, 38893887, 42246738, 52316388, 112367349);
 
 -- Set race as AfricanAmerican
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'AfricanAmerican'
-WHERE `patient_nbr` IN (6919587, 'FILL THIS...');
+WHERE `patient_nbr` IN (6919587, 10980891, 40090752, 54643194, 101753730, 107849052);
 
 -- Set race as Other
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'Other'
-WHERE `patient_nbr` IN ('FILL THIS...');
+WHERE `patient_nbr` IN (28532295, 30689766, 32314608, 33247647, 36967347, 37547937, 37638306, 38774187, 39160719, 42096384, 90817893, 93105117, 93662784, 94027644, 98584524, 100322946, 103228398, 103690161, 105125598, 106425234);
 
 -- Set race as Asian
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'Asian'
-WHERE `patient_nbr` IN ('FILL THIS...');
+WHERE `patient_nbr` IN (24332220, 31812075, 34248078, 94539465, 97024806, 103305528, 104622570, 110657970, 111534210);
 
 -- Set race as Hispanic
 UPDATE `diabetes_dwh_staging`.`dataset`
 SET `race` = 'Hispanic'
-WHERE `patient_nbr` IN ('FILL THIS...');
+WHERE `patient_nbr` IN (37572957, 44744166, 45113778, 90035874, 91107549, 93809358, 94088088, 98934615, 106895331, 109448541);
 ```
 
 ## Step 05 - Transforming
