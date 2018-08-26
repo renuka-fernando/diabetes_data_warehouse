@@ -151,13 +151,11 @@ USE `diabetes_dwh` ;
 
 CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_patient` (
   `patient_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `patient_number` VARCHAR(45) NOT NULL COMMENT '',
   `race` VARCHAR(45) NULL COMMENT '',
   `gender` VARCHAR(45) NULL COMMENT '',
   `age` VARCHAR(45) NULL COMMENT '',
-  `wight` VARCHAR(45) NULL COMMENT '',
-  `patient_number` VARCHAR(45) NOT NULL COMMENT '',
-  PRIMARY KEY (`patient_sk`)  COMMENT '',
-  UNIQUE INDEX `patient_number_UNIQUE` (`patient_number` ASC)  COMMENT '')
+  PRIMARY KEY (`patient_sk`)  COMMENT '')
 ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_junk_admissionDetails` (
@@ -176,11 +174,11 @@ CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_discharge` (
   PRIMARY KEY (`discharge_sk`)  COMMENT '')
 ENGINE = InnoDB;
 
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_test` (
-  `test_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_test_results` (
+  `test_results_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
   `glucose_serum_test_result` VARCHAR(45) NULL COMMENT '',
   `a1c_test_results` VARCHAR(45) NULL COMMENT '',
-  PRIMARY KEY (`test_sk`)  COMMENT '')
+  PRIMARY KEY (`test_result_sk`)  COMMENT '')
 ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_medication` (
@@ -245,9 +243,25 @@ ENGINE = InnoDB;
 ```
 
 ## Step 04 - Data Cleansing
+### Horizontal Filtering
+Some importants attributes that should be considered are missing in the dataset. Lets discard them.
+```sql
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `payer_code` = '?';
+
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `medical_specialty` = '?';
+
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `race` = '?';
+
+SELECT COUNT(*) FROM `diabetes_dwh_staging`.`dataset`;
+```
+We have 27140 data records.
+
 ### Cleansing Patient Data
 
-Select diry data wrt gender of the patient
+- Select diry data wrt gender of the patient
 ```sql
 CREATE OR REPLACE VIEW `diabetes_dwh_staging`.`dirty_patient_gender` AS
 SELECT *
@@ -272,3 +286,101 @@ UPDATE `diabetes_dwh_staging`.`dataset`
 SET `gender` = 'Male'
 WHERE `patient_nbr` in (55500588, 109210482, 40867677);
 ```
+
+- Select diry data wrt race of the patient
+```sql
+SELECT distinct `race`
+FROM `diabetes_dwh_staging`.`dataset`;
+-- 6 distinct races are found. (Caucasian, AfricanAmerican, ?, Other, Asian, Hispanic)
+
+-- Views to identify dirty data
+CREATE OR REPLACE VIEW `diabetes_dwh_staging`.`dirty_patient_race` AS
+SELECT `patient_nbr`, count(distinct `race`) as `race_count`
+FROM `diabetes_dwh_staging`.`dataset`
+group by `patient_nbr` having `race_count` > 1;
+
+SELECT count(`patient_nbr`)
+FROM `diabetes_dwh_staging`.`dirty_patient_race`;
+
+SELECT `encounter_id`, `patient_nbr`, `race`
+FROM `diabetes_dwh_staging`.`dataset`
+WHERE `patient_nbr` in (
+	SELECT `patient_nbr`
+    FROM `diabetes_dwh_staging`.`dirty_patient_race`
+)
+ORDER BY `patient_nbr`, `encounter_id`;
+```
+There were 167 dirty records with 51 patients and cleaned with selecting most frequent and latest data.
+```sql
+-- Set race as Caucasian
+UPDATE `diabetes_dwh_staging`.`dataset`
+SET `race` = 'Caucasian'
+WHERE `patient_nbr` IN (1553220, 'FILL THIS...');
+
+-- Set race as AfricanAmerican
+UPDATE `diabetes_dwh_staging`.`dataset`
+SET `race` = 'AfricanAmerican'
+WHERE `patient_nbr` IN (6919587, 'FILL THIS...');
+
+-- Set race as Other
+UPDATE `diabetes_dwh_staging`.`dataset`
+SET `race` = 'Other'
+WHERE `patient_nbr` IN ('FILL THIS...');
+
+-- Set race as Asian
+UPDATE `diabetes_dwh_staging`.`dataset`
+SET `race` = 'Asian'
+WHERE `patient_nbr` IN ('FILL THIS...');
+
+-- Set race as Hispanic
+UPDATE `diabetes_dwh_staging`.`dataset`
+SET `race` = 'Hispanic'
+WHERE `patient_nbr` IN ('FILL THIS...');
+```
+
+## Step 05 - Transforming
+Transform primary, secondary and additional diagnosis based on "**International Statistical Classification of Diseases and Related Health Problems**"
+- Visit http://icd9.chrisendres.com/index.php?action=contents for Diseases and Injuries Tabular Index
+
+Values are stored to the file **data_transforming/diseases_and_injuries_tabular_index.csv**.
+
+| id | disease                                                                                            | code_letter | code_from | code_to |
+|----|----------------------------------------------------------------------------------------------------|-------------|-----------|---------|
+|  1 | INFECTIOUS AND PARASITIC DISEASES                                                                  |             |         1 |     139 |
+|  2 | NEOPLASMS                                                                                          |             |       140 |     239 |
+|  3 | ENDOCRINE, NUTRITIONAL AND METABOLIC DISEASES, AND IMMUNITY DISORDERS                              |             |       240 |     279 |
+|  4 | DISEASES OF THE BLOOD AND BLOOD-FORMING ORGANS                                                     |             |       280 |     289 |
+|  5 | MENTAL DISORDERS                                                                                   |             |       290 |     319 |
+|  6 | DISEASES OF THE NERVOUS SYSTEM AND SENSE ORGANS                                                    |             |       320 |     389 |
+|  7 | DISEASES OF THE CIRCULATORY SYSTEM                                                                 |             |       390 |     459 |
+|  8 | DISEASES OF THE RESPIRATORY SYSTEM                                                                 |             |       460 |     519 |
+|  9 | DISEASES OF THE DIGESTIVE SYSTEM                                                                   |             |       520 |     579 |
+| 10 | DISEASES OF THE GENITOURINARY SYSTEM                                                               |             |       580 |     629 |
+| 11 | COMPLICATIONS OF PREGNANCY, CHILDBIRTH, AND THE PUERPERIUM                                         |             |       630 |     679 |
+| 12 | DISEASES OF THE SKIN AND SUBCUTANEOUS TISSUE                                                       |             |       680 |     709 |
+| 13 | DISEASES OF THE MUSCULOSKELETAL SYSTEM AND CONNECTIVE TISSUE                                       |             |       710 |     739 |
+| 14 | CONGENITAL ANOMALIES                                                                               |             |       740 |     759 |
+| 15 | CERTAIN CONDITIONS ORIGINATING IN THE PERINATAL PERIOD                                             |             |       760 |     779 |
+| 16 | SYMPTOMS, SIGNS, AND ILL-DEFINED CONDITIONS                                                        |             |       780 |     799 |
+| 17 | INJURY AND POISONING                                                                               |             |       800 |     999 |
+| 18 | SUPPLEMENTARY CLASSIFICATION OF FACTORS INFLUENCING HEALTH STATUS AND CONTACT WITH HEALTH SERVICES | V           |         1 |      89 |
+| 19 | SUPPLEMENTARY CLASSIFICATION OF EXTERNAL CAUSES OF INJURY AND POISONING                            | E           |       800 |     999 |
+
+
+## Step 06 - Loading Data
+### Loading to Patient Dimension
+```sql
+INSERT INTO `diabetes_dwh`.`dim_patient` (`patient_number`, `race`, `gender`, `age`)
+SELECT DISTINCT `patient_nbr`, `race`, `gender`, `age`
+FROM `diabetes_dwh_staging`.`dataset`
+ORDER BY `patient_nbr`, `age`;
+```
+
+### Loading to Test Results Dimension
+```sql
+INSERT INTO `diabetes_dwh`.`dim_test_results` (`glucose_serum_test_result`, `a1c_test_results`)
+SELECT DISTINCT `max_glu_serum`, `A1Cresult`
+FROM `diabetes_dwh_staging`.`dataset`;
+```
+
+### Loading to Fact
