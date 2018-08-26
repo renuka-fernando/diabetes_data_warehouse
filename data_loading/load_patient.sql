@@ -1,6 +1,6 @@
 INSERT INTO `diabetes_dwh`.`dim_patient` (`patient_number`, `race`, `gender`, `age`)
 SELECT DISTINCT `patient_nbr`, `race`, `gender`, `age`
-FROM `diabetes_dwh_staging`.`dataset`
+FROM `diabetes_dwh_staging`.`dataset_modified`
 ORDER BY `patient_nbr`, `age`;
 
 SELECT *

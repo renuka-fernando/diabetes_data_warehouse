@@ -212,9 +212,9 @@ ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_junk_diagnosis` (
   `diagnosis_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `diagnosis_1` VARCHAR(45) NULL COMMENT '',
-  `diagnosis_2` VARCHAR(45) NULL COMMENT '',
-  `diagnosis_3` VARCHAR(45) NULL COMMENT '',
+  `primary_diagnosis` VARCHAR(200) NULL COMMENT '',
+  `secondary_diagnosis` VARCHAR(200) NULL COMMENT '',
+  `additional_diagnosis` VARCHAR(200) NULL COMMENT '',
   PRIMARY KEY (`diagnosis_sk`)  COMMENT '')
 ENGINE = InnoDB;
 
@@ -566,8 +566,8 @@ WHILE i < n DO
 	);
   SET i = i + 1;
 END WHILE;
-END;
-;;
+
+END;;
 
 DELIMITER ;
 CALL `diabetes_dwh_staging`.`TRANSFORM_ICD9`();
@@ -579,7 +579,7 @@ CALL `diabetes_dwh_staging`.`TRANSFORM_ICD9`();
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_patient` (`patient_number`, `race`, `gender`, `age`)
 SELECT DISTINCT `patient_nbr`, `race`, `gender`, `age`
-FROM `diabetes_dwh_staging`.`dataset`
+FROM `diabetes_dwh_staging`.`dataset_modified`
 ORDER BY `patient_nbr`, `age`;
 ```
 
@@ -587,7 +587,56 @@ ORDER BY `patient_nbr`, `age`;
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_test_results` (`glucose_serum_test_result`, `a1c_test_results`)
 SELECT DISTINCT `max_glu_serum`, `A1Cresult`
-FROM `diabetes_dwh_staging`.`dataset`;
+FROM `diabetes_dwh_staging`.`dataset_modified`;
+```
+
+### Loading to Diagnosis Junk Dimension
+This query may take several miniutes to execute and may produce 6859 rows.
+```sql
+DROP PROCEDURE IF EXISTS `diabetes_dwh`.`fill_diagnosis_junk`;
+DELIMITER ;;
+
+CREATE PROCEDURE `diabetes_dwh`.`fill_diagnosis_junk`()
+BEGIN
+
+DECLARE n INT DEFAULT 0;
+DECLARE i INT DEFAULT 0;
+DECLARE j INT DEFAULT 0;
+DECLARE k INT DEFAULT 0;
+
+DECLARE pri VARCHAR(200);
+DECLARE sec VARCHAR(200);
+DECLARE alt VARCHAR(200);
+
+SELECT COUNT(*) FROM `diabetes_DWH_staging`.`icd9_index` INTO n;
+DELETE FROM `diabetes_dwh`.`dim_junk_diagnosis`;
+
+WHILE i < n DO
+	SET j = 0;
+	WHILE j < n DO
+		SET k = 0;
+		WHILE k < n DO
+			SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT i, 1 INTO pri;
+            SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT j, 1 INTO sec;
+            SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT k, 1 INTO alt;
+        
+			INSERT INTO `diabetes_dwh`.`dim_junk_diagnosis`
+				(`primary_diagnosis`, `secondary_diagnosis`, `additional_diagnosis`)
+            VALUES (pri, sec, alt);
+            
+			SET k = k + 1;
+		END WHILE;
+        SET j = j + 1;
+	END WHILE;
+    SET i = i + 1;
+END WHILE;
+
+END;;
+
+DELIMITER ;
+CALL `diabetes_dwh`.`fill_diagnosis_junk`();
+
+SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_diagnosis`;
 ```
 
 ### Loading to Fact

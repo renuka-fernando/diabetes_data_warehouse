@@ -126,8 +126,8 @@ WHILE i < n DO
 	);
   SET i = i + 1;
 END WHILE;
-END;
-;;
+
+END;;
 
 DELIMITER ;
 CALL `diabetes_dwh_staging`.`TRANSFORM_ICD9`();
