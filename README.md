@@ -573,9 +573,98 @@ DELIMITER ;
 CALL `diabetes_dwh_staging`.`TRANSFORM_ICD9`();
 ```
 
+Transform **Admission Type, Discharge Disposition, Admission Source** with given mapping data set. One procedure will takes around 30 seconds to execute.
+
+```sql
+DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_TYPE`;
+DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_SOURCE`;
+DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`TRANSFORM_DISCHARGE_DISPOSITION`;
+DELIMITER ;;
+
+-- Admission Type
+CREATE PROCEDURE `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_TYPE`()
+BEGIN
+
+DECLARE n INT DEFAULT 0;
+DECLARE i INT DEFAULT 1;
+
+SET n = (SELECT COUNT(*) FROM `diabetes_dwh_staging`.`admission_type`);
+-- Add the column
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+ADD COLUMN `admission_type` VARCHAR(150);
+
+WHILE i <= n DO
+	UPDATE `diabetes_dwh_staging`.`dataset_modified`
+    SET `admission_type` = (
+		SELECT `description` FROM `diabetes_dwh_staging`.`admission_type` WHERE `id` = i
+    )
+    WHERE `admission_type_id` = i;
+    SET i = i + 1;
+END WHILE;
+
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+DROP COLUMN `admission_type_id`;
+END;;
+
+-- Admission Source
+CREATE PROCEDURE `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_SOURCE`()
+BEGIN
+
+DECLARE n INT DEFAULT 0;
+DECLARE i INT DEFAULT 1;
+
+SET n = (SELECT COUNT(*) FROM `diabetes_dwh_staging`.`admission_source`);
+-- Add the column
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+ADD COLUMN `admission_source` VARCHAR(150);
+
+WHILE i <= n DO
+	UPDATE `diabetes_dwh_staging`.`dataset_modified`
+    SET `admission_source` = (
+		SELECT `description` FROM `diabetes_dwh_staging`.`admission_source` WHERE `id` = i
+    )
+    WHERE `admission_source_id` = i;
+    SET i = i + 1;
+END WHILE;
+
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+DROP COLUMN `admission_source_id`;
+END;;
+
+-- Discharge Disposition
+CREATE PROCEDURE `diabetes_dwh_staging`.`TRANSFORM_DISCHARGE_DISPOSITION`()
+BEGIN
+
+DECLARE n INT DEFAULT 0;
+DECLARE i INT DEFAULT 1;
+
+SET n = (SELECT COUNT(*) FROM `diabetes_dwh_staging`.`discharge_disposition`);
+-- Add the column
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+ADD COLUMN `discharge_disposition` VARCHAR(150);
+
+WHILE i <= n DO
+	UPDATE `diabetes_dwh_staging`.`dataset_modified`
+    SET `discharge_disposition` = (
+		SELECT `description` FROM `diabetes_dwh_staging`.`discharge_disposition` WHERE `id` = i
+    )
+    WHERE `discharge_disposition_id` = i;
+    SET i = i + 1;
+END WHILE;
+
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+DROP COLUMN `discharge_disposition_id`;
+END;;
+
+DELIMITER ;
+CALL `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_TYPE`();
+CALL `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_SOURCE`();
+CALL `diabetes_dwh_staging`.`TRANSFORM_DISCHARGE_DISPOSITION`();
+
+```
 
 ## Step 06 - Loading Data
-### Loading to Patient Dimension
+### 6.1 Loading to Patient Dimension
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_patient` (`patient_number`, `race`, `gender`, `age`)
 SELECT DISTINCT `patient_nbr`, `race`, `gender`, `age`
@@ -583,15 +672,15 @@ FROM `diabetes_dwh_staging`.`dataset_modified`
 ORDER BY `patient_nbr`, `age`;
 ```
 
-### Loading to Test Results Dimension
+### 6.2 Loading to Test Results Dimension
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_test_results` (`glucose_serum_test_result`, `a1c_test_results`)
 SELECT DISTINCT `max_glu_serum`, `A1Cresult`
 FROM `diabetes_dwh_staging`.`dataset_modified`;
 ```
 
-### Loading to Diagnosis Junk Dimension
-This query may take several miniutes to execute and may produce 6859 rows.
+### 6.3 Loading to Diagnosis Junk Dimension
+This query may take several miniutes (~5min) to execute and may produce 6859 rows.
 ```sql
 DROP PROCEDURE IF EXISTS `diabetes_dwh`.`fill_diagnosis_junk`;
 DELIMITER ;;
@@ -612,23 +701,27 @@ SELECT COUNT(*) FROM `diabetes_DWH_staging`.`icd9_index` INTO n;
 DELETE FROM `diabetes_dwh`.`dim_junk_diagnosis`;
 
 WHILE i < n DO
-	SET j = 0;
-	WHILE j < n DO
-		SET k = 0;
-		WHILE k < n DO
-			SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT i, 1 INTO pri;
-            SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT j, 1 INTO sec;
-            SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT k, 1 INTO alt;
+  SET j = 0;
+  SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT i, 1 INTO pri;
+    
+  WHILE j < n DO
+    SET k = 0;
+    SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT j, 1 INTO sec;
         
-			INSERT INTO `diabetes_dwh`.`dim_junk_diagnosis`
-				(`primary_diagnosis`, `secondary_diagnosis`, `additional_diagnosis`)
-            VALUES (pri, sec, alt);
+    WHILE k < n DO
+      SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT k, 1 INTO alt;
+        
+      INSERT INTO `diabetes_dwh`.`dim_junk_diagnosis`
+        (`primary_diagnosis`, `secondary_diagnosis`, `additional_diagnosis`)
+      VALUES (pri, sec, alt);
             
-			SET k = k + 1;
-		END WHILE;
-        SET j = j + 1;
-	END WHILE;
-    SET i = i + 1;
+      SET k = k + 1;
+    END WHILE;
+        
+    SET j = j + 1;
+  END WHILE;
+    
+  SET i = i + 1;
 END WHILE;
 
 END;;

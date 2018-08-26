@@ -18,12 +18,14 @@ DELETE FROM `diabetes_dwh`.`dim_junk_diagnosis`;
 
 WHILE i < n DO
 	SET j = 0;
+    SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT i, 1 INTO pri;
+    
 	WHILE j < n DO
 		SET k = 0;
+		SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT j, 1 INTO sec;
+        
 		WHILE k < n DO
-			SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT i, 1 INTO pri;
-            SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT j, 1 INTO sec;
-            SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT k, 1 INTO alt;
+			SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT k, 1 INTO alt;
         
 			INSERT INTO `diabetes_dwh`.`dim_junk_diagnosis`
 				(`primary_diagnosis`, `secondary_diagnosis`, `additional_diagnosis`)
@@ -31,8 +33,10 @@ WHILE i < n DO
             
 			SET k = k + 1;
 		END WHILE;
+        
         SET j = j + 1;
 	END WHILE;
+    
     SET i = i + 1;
 END WHILE;
 
