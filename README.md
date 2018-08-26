@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS `diabetes_DWH_staging`.`dataset` (
   `number_outpatient` INT NULL COMMENT '',
   `number_emergency` INT NULL COMMENT '',
   `number_inpatient` INT NULL COMMENT '',
-  `diag_1` VARCHAR(45) NULL COMMENT '',
-  `diag_2` VARCHAR(45) NULL COMMENT '',
-  `diag_3` VARCHAR(45) NULL COMMENT '',
+  `diag_1` VARCHAR(200) NULL COMMENT '',
+  `diag_2` VARCHAR(200) NULL COMMENT '',
+  `diag_3` VARCHAR(200) NULL COMMENT '',
   `number_diagnoses` INT NULL COMMENT '',
   `max_glu_serum` VARCHAR(45) NULL COMMENT '',
   `A1Cresult` VARCHAR(45) NULL COMMENT '',
@@ -243,6 +243,67 @@ ENGINE = InnoDB;
 ```
 
 ## Step 04 - Data Cleansing
+### Store Modified Changes
+```sql
+CREATE TABLE IF NOT EXISTS `diabetes_DWH_staging`.`dataset_modified` (
+  `encounter_id` INT NULL COMMENT '',
+  `patient_nbr` INT NULL COMMENT '',
+  `race` VARCHAR(45) NULL COMMENT '',
+  `gender` VARCHAR(45) NULL COMMENT '',
+  `age` VARCHAR(45) NULL COMMENT '',
+  `weight` VARCHAR(45) NULL COMMENT '',
+  `admission_type_id` INT NULL COMMENT '',
+  `discharge_disposition_id` INT NULL COMMENT '',
+  `admission_source_id` INT NULL COMMENT '',
+  `time_in_hospital` INT NULL COMMENT '',
+  `payer_code` VARCHAR(45) NULL COMMENT '',
+  `medical_specialty` VARCHAR(45) NULL COMMENT '',
+  `num_lab_procedures` INT NULL COMMENT '',
+  `num_procedures` INT NULL COMMENT '',
+  `num_medications` INT NULL COMMENT '',
+  `number_outpatient` INT NULL COMMENT '',
+  `number_emergency` INT NULL COMMENT '',
+  `number_inpatient` INT NULL COMMENT '',
+  `diag_1` VARCHAR(200) NULL COMMENT '',
+  `diag_2` VARCHAR(200) NULL COMMENT '',
+  `diag_3` VARCHAR(200) NULL COMMENT '',
+  `number_diagnoses` INT NULL COMMENT '',
+  `max_glu_serum` VARCHAR(45) NULL COMMENT '',
+  `A1Cresult` VARCHAR(45) NULL COMMENT '',
+  `metformin` VARCHAR(45) NULL COMMENT '',
+  `repaglinide` VARCHAR(45) NULL COMMENT '',
+  `nateglinide` VARCHAR(45) NULL COMMENT '',
+  `chlorpropamide` VARCHAR(45) NULL COMMENT '',
+  `glimepiride` VARCHAR(45) NULL COMMENT '',
+  `acetohexamide` VARCHAR(45) NULL COMMENT '',
+  `glipizide` VARCHAR(45) NULL COMMENT '',
+  `glyburide` VARCHAR(45) NULL COMMENT '',
+  `tolbutamide` VARCHAR(45) NULL COMMENT '',
+  `pioglitazone` VARCHAR(45) NULL COMMENT '',
+  `rosiglitazone` VARCHAR(45) NULL COMMENT '',
+  `acarbose` VARCHAR(45) NULL COMMENT '',
+  `miglitol` VARCHAR(45) NULL COMMENT '',
+  `troglitazone` VARCHAR(45) NULL COMMENT '',
+  `tolazamide` VARCHAR(45) NULL COMMENT '',
+  `examide` VARCHAR(45) NULL COMMENT '',
+  `citoglipton` VARCHAR(45) NULL COMMENT '',
+  `insulin` VARCHAR(45) NULL COMMENT '',
+  `glyburide-metformin` VARCHAR(45) NULL COMMENT '',
+  `glipizide-metformin` VARCHAR(45) NULL COMMENT '',
+  `glimepiride-pioglitazone` VARCHAR(45) NULL COMMENT '',
+  `metformin-rosiglitazone` VARCHAR(45) NULL COMMENT '',
+  `metformin-pioglitazone` VARCHAR(45) NULL COMMENT '',
+  `change` VARCHAR(45) NULL COMMENT '',
+  `diabetesMed` VARCHAR(45) NULL COMMENT '',
+  `readmitted` VARCHAR(45) NULL COMMENT '')
+ENGINE = InnoDB;
+```
+
+```sql
+INSERT INTO `diabetes_DWH_staging`.`dataset_modified`
+SELECT * FROM `diabetes_DWH_staging`.`dataset`;
+```
+
 ### Horizontal Filtering
 Some importants attributes that should be considered are missing in the dataset. Lets discard them.
 ```sql
@@ -255,9 +316,18 @@ WHERE `medical_specialty` = '?';
 DELETE FROM `diabetes_dwh_staging`.`dataset`
 WHERE `race` = '?';
 
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `diag_1` = '?';
+
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `diag_2` = '?';
+
+DELETE FROM `diabetes_dwh_staging`.`dataset`
+WHERE `diag_3` = '?';
+
 SELECT COUNT(*) FROM `diabetes_dwh_staging`.`dataset`;
 ```
-We have 27140 data records.
+We have 26755 data records.
 
 ### Cleansing Patient Data
 
@@ -365,6 +435,88 @@ Values are stored to the file **data_transforming/diseases_and_injuries_tabular_
 | 17 | INJURY AND POISONING                                                                               |             |       800 |     999 |
 | 18 | SUPPLEMENTARY CLASSIFICATION OF FACTORS INFLUENCING HEALTH STATUS AND CONTACT WITH HEALTH SERVICES | V           |         1 |      89 |
 | 19 | SUPPLEMENTARY CLASSIFICATION OF EXTERNAL CAUSES OF INJURY AND POISONING                            | E           |       800 |     999 |
+
+Transforming
+```sql
+DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`TRANSFORM_ICD9`;
+DELIMITER ;;
+
+CREATE PROCEDURE `diabetes_dwh_staging`.`TRANSFORM_ICD9`()
+BEGIN
+
+DECLARE n INT DEFAULT 0;
+DECLARE i INT DEFAULT 0;
+
+-- Transform other values (starts with V and E)
+-- Transform "diag_1" values
+UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_1` = (
+	SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = 'V'
+)
+WHERE LEFT(`diag_1`, 1) = 'V';
+UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_1` = (
+	SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = 'E'
+)
+WHERE LEFT(`diag_1`, 1) = 'E';
+
+-- Transform "diag_2" values
+UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_2` = (
+	SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = 'V'
+)
+WHERE LEFT(`diag_2`, 1) = 'V';
+UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_2` = (
+	SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = 'E'
+)
+WHERE LEFT(`diag_2`, 1) = 'E';
+
+-- Transform "diag_3" values
+UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_3` = (
+	SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = 'V'
+)
+WHERE LEFT(`diag_3`, 1) = 'V';
+UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_3` = (
+	SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = 'E'
+)
+WHERE LEFT(`diag_3`, 1) = 'E';
+
+
+-- Transform values with digits only
+SELECT COUNT(*) FROM `diabetes_dwh_staging`.`icd9_index` WHERE `code_letter` = '' INTO n;
+SET i = 0;
+WHILE i < n DO 
+	-- Transform "diag_1" values
+	UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_1` = (
+		SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1
+	)
+    WHERE `diag_1` REGEXP '^[0-9]+\\.?[0-9]*$' AND (
+		`diag_1` >= (SELECT `code_from` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1) AND
+		`diag_1` <= (SELECT `code_to` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1)
+	);
+    
+	-- Transform "diag_2" values
+	UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_2` = (
+		SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1
+	)
+    WHERE `diag_2` REGEXP '^[0-9]+\\.?[0-9]*$' AND (
+		`diag_2` >= (SELECT `code_from` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1) AND
+		`diag_2` <= (SELECT `code_to` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1)
+	);
+    
+    -- Transform "diag_3" values
+	UPDATE `diabetes_dwh_staging`.`dataset_modified` SET `diag_3` = (
+		SELECT `disease` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1
+	)
+    WHERE `diag_3` REGEXP '^[0-9]+\\.?[0-9]*$' AND (
+		`diag_3` >= (SELECT `code_from` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1) AND
+		`diag_3` <= (SELECT `code_to` FROM `diabetes_dwh_staging`.`icd9_index` LIMIT i,1)
+	);
+  SET i = i + 1;
+END WHILE;
+END;
+;;
+
+DELIMITER ;
+CALL `diabetes_dwh_staging`.`TRANSFORM_ICD9`();
+```
 
 
 ## Step 06 - Loading Data
