@@ -614,7 +614,7 @@ ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_discharge` (
   `discharge_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `discharge_disposition` VARCHAR(45) NULL COMMENT '',
+  `discharge_disposition` VARCHAR(150) NULL COMMENT '',
   `readmitted` VARCHAR(45) NULL COMMENT '',
   `payer_code` VARCHAR(45) NULL COMMENT '',
   PRIMARY KEY (`discharge_sk`)  COMMENT '')
@@ -624,7 +624,7 @@ CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_test_results` (
   `test_results_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
   `glucose_serum_test_result` VARCHAR(45) NULL COMMENT '',
   `a1c_test_results` VARCHAR(45) NULL COMMENT '',
-  PRIMARY KEY (`test_result_sk`)  COMMENT '')
+  PRIMARY KEY (`test_results_sk`)  COMMENT '')
 ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_medication` (
@@ -690,76 +690,50 @@ ENGINE = InnoDB;
 
 ## Step 06 - Loading Data
 ### 6.1 Loading to Patient Dimension
+There are 19808 distict values.
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_patient` (`patient_number`, `race`, `gender`, `age`)
 SELECT DISTINCT `patient_nbr`, `race`, `gender`, `age`
 FROM `diabetes_dwh_staging`.`dataset_modified`
 ORDER BY `patient_nbr`, `age`;
+
+SELECT COUNT(*) FROM `diabetes_dwh`.`dim_patient`;
 ```
 
 ### 6.2 Loading to Test Results Dimension
+There are 7 distict values.
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_test_results` (`glucose_serum_test_result`, `a1c_test_results`)
 SELECT DISTINCT `max_glu_serum`, `A1Cresult`
 FROM `diabetes_dwh_staging`.`dataset_modified`;
+
+SELECT COUNT(*) FROM `diabetes_dwh`.`dim_test_results`;
 ```
 
-### 6.3 Loading to Diagnosis Junk Dimension
-This query may take several miniutes (~5min) to execute and may produce 6859 rows.
+### 6.3 Loading to Discharge Dimension
+There are 339 distict values.
 ```sql
-DROP PROCEDURE IF EXISTS `diabetes_dwh`.`fill_diagnosis_junk`;
-DELIMITER ;;
+INSERT INTO `diabetes_dwh`.`dim_discharge` (`discharge_disposition`, `readmitted`, `payer_code`)
+SELECT DISTINCT `discharge_disposition`, `readmitted`, `payer_code`
+FROM `diabetes_dwh_staging`.`dataset_modified`;
 
-CREATE PROCEDURE `diabetes_dwh`.`fill_diagnosis_junk`()
-BEGIN
+SELECT COUNT(*) FROM `diabetes_dwh`.`dim_discharge`;
+```
 
-DECLARE n INT DEFAULT 0;
-DECLARE i INT DEFAULT 0;
-DECLARE j INT DEFAULT 0;
-DECLARE k INT DEFAULT 0;
-
-DECLARE pri VARCHAR(200);
-DECLARE sec VARCHAR(200);
-DECLARE alt VARCHAR(200);
-
-SELECT COUNT(*) FROM `diabetes_DWH_staging`.`icd9_index` INTO n;
-DELETE FROM `diabetes_dwh`.`dim_junk_diagnosis`;
-
-WHILE i < n DO
-  SET j = 0;
-  SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT i, 1 INTO pri;
-    
-  WHILE j < n DO
-    SET k = 0;
-    SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT j, 1 INTO sec;
-        
-    WHILE k < n DO
-      SELECT `disease` FROM `diabetes_DWH_staging`.`icd9_index` LIMIT k, 1 INTO alt;
-        
-      INSERT INTO `diabetes_dwh`.`dim_junk_diagnosis`
-        (`primary_diagnosis`, `secondary_diagnosis`, `additional_diagnosis`)
-      VALUES (pri, sec, alt);
-            
-      SET k = k + 1;
-    END WHILE;
-        
-    SET j = j + 1;
-  END WHILE;
-    
-  SET i = i + 1;
-END WHILE;
-
-END;;
-
-DELIMITER ;
-CALL `diabetes_dwh`.`fill_diagnosis_junk`();
+### 6.4 Loading to Diagnosis Junk Dimension
+Lets load all distinct values for the junk dimension.
+There are 2323 distict values.
+```sql
+INSERT INTO `diabetes_dwh`.`dim_junk_diagnosis` (`primary_diagnosis`, `secondary_diagnosis`, `additional_diagnosis`)
+SELECT DISTINCT `diag_1`, `diag_2`, `diag_3`
+FROM `diabetes_dwh_staging`.`dataset_modified`;
 
 SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_diagnosis`;
 ```
 
-### 6.4 Loading to Admission Junk Dimension
+### 6.5 Loading to Admission Junk Dimension
 Lets load all distinct values for the junk dimension.
-There are 717 distict values with including NULL values.
+There are 391 distict values with including NULL values.
 
 ```sql
 INSERT INTO `diabetes_dwh`.`dim_junk_admissionDetails` (`admission_type`, `admission_source`, `medical_speciality`)
