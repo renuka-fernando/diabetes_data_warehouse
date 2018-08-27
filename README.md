@@ -720,7 +720,29 @@ FROM `diabetes_dwh_staging`.`dataset_modified`;
 SELECT COUNT(*) FROM `diabetes_dwh`.`dim_discharge`;
 ```
 
-### 6.4 Loading to Diagnosis Junk Dimension
+### 6.4 Loading to Medication Dimension
+There are 633 distict values.
+```sql
+INSERT INTO `diabetes_dwh`.`dim_medication` (
+	`change_of_medication`, `diabetes_medicatin`, `metformin`, `repaglinide`,
+    `nateglinide`, `chlorpropamide`, `glimepiride`, `acetohexamide`, `glipizide`,
+    `tolbutamide`, `pioglitazone`, `rosiglitazone`, `acarbose`, `miglitol`,
+    `troglitazone`, `tolazamide`, `examide`, `citoglipton`, `insulin`,
+    `glyburide-metformin`, `glipizide-metformin`, `glimepiride-pioglitazone`,
+    `metformin-rosiglitazone`, `metformin-pioglitazone`
+)
+SELECT DISTINCT `change`, `diabetesMed`, `metformin`,
+	`repaglinide`, `nateglinide`, `chlorpropamide`, `glimepiride`, `acetohexamide`,
+    `glipizide`, `tolbutamide`, `pioglitazone`, `rosiglitazone`, `acarbose`,
+    `miglitol`, `troglitazone`, `tolazamide`, `examide`, `citoglipton`, `insulin`,
+    `glyburide-metformin`, `glipizide-metformin`, `glimepiride-pioglitazone`,
+    `metformin-rosiglitazone`, `metformin-pioglitazone`
+FROM `diabetes_dwh_staging`.`dataset_modified`;
+
+SELECT COUNT(*) FROM `diabetes_dwh`.`dim_medication`;
+```
+
+### 6.5 Loading to Diagnosis Junk Dimension
 Lets load all distinct values for the junk dimension.
 There are 2323 distict values.
 ```sql
@@ -731,7 +753,7 @@ FROM `diabetes_dwh_staging`.`dataset_modified`;
 SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_diagnosis`;
 ```
 
-### 6.5 Loading to Admission Junk Dimension
+### 6.6 Loading to Admission Junk Dimension
 Lets load all distinct values for the junk dimension.
 There are 391 distict values with including NULL values.
 
@@ -743,4 +765,4 @@ FROM `diabetes_dwh_staging`.`dataset_modified`;
 SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_admissionDetails`;
 ```
 
-### Loading to Fact
+### 6.7 Loading to Fact
