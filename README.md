@@ -243,7 +243,7 @@ ENGINE = InnoDB;
 ```
 
 ## Step 04 - Data Cleansing
-### Store Modified Changes
+### 4.1 Create a duplicate data set to make changes
 ```sql
 CREATE TABLE IF NOT EXISTS `diabetes_DWH_staging`.`dataset_modified` (
   `encounter_id` INT NULL COMMENT '',
@@ -307,25 +307,25 @@ SELECT * FROM `diabetes_DWH_staging`.`dataset`;
 ### Horizontal Filtering
 Some importants attributes that should be considered are missing in the dataset. Lets discard them.
 ```sql
-DELETE FROM `diabetes_dwh_staging`.`dataset`
+DELETE FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `payer_code` = '?';
 
-DELETE FROM `diabetes_dwh_staging`.`dataset`
+DELETE FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `medical_specialty` = '?';
 
-DELETE FROM `diabetes_dwh_staging`.`dataset`
+DELETE FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `race` = '?';
 
-DELETE FROM `diabetes_dwh_staging`.`dataset`
+DELETE FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `diag_1` = '?';
 
-DELETE FROM `diabetes_dwh_staging`.`dataset`
+DELETE FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `diag_2` = '?';
 
-DELETE FROM `diabetes_dwh_staging`.`dataset`
+DELETE FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `diag_3` = '?';
 
-SELECT COUNT(*) FROM `diabetes_dwh_staging`.`dataset`;
+SELECT COUNT(*) FROM `diabetes_dwh_staging`.`dataset_modified`;
 ```
 We have 26755 data records.
 
@@ -335,14 +335,14 @@ We have 26755 data records.
 ```sql
 CREATE OR REPLACE VIEW `diabetes_dwh_staging`.`dirty_patient_gender` AS
 SELECT *
-FROM `diabetes_dwh_staging`.`dataset`
+FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `patient_nbr` in (
 	SELECT `patient_nbr`
-	FROM `diabetes_dwh_staging`.`dataset`
+	FROM `diabetes_dwh_staging`.`dataset_modified`
 	WHERE `gender` = 'Female'
 ) AND `patient_nbr` in (
 	SELECT `patient_nbr`
-	FROM `diabetes_dwh_staging`.`dataset`
+	FROM `diabetes_dwh_staging`.`dataset_modified`
 	WHERE `gender` = 'Male'
 );
 
@@ -350,66 +350,68 @@ SELECT `encounter_id`, `patient_nbr`, `race`, `gender`
 FROM `diabetes_dwh_staging`.`dirty_patient_gender`;
 ```
 
-There were 7 dirty records with 3 patients and cleaned with selecting most frequent and latest data.
+There are 2 dirty records with 1 patient and cleaned with selecting most frequent and latest data.
 ```sql
-UPDATE `diabetes_dwh_staging`.`dataset`
+UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `gender` = 'Male'
-WHERE `patient_nbr` in (55500588, 109210482, 40867677);
+WHERE `patient_nbr` = 109210482;
 ```
 
 - Select diry data wrt race of the patient
 ```sql
 SELECT distinct `race`
-FROM `diabetes_dwh_staging`.`dataset`;
+FROM `diabetes_dwh_staging`.`dataset_modified`;
 -- 6 distinct races are found. (Caucasian, AfricanAmerican, ?, Other, Asian, Hispanic)
 
 -- Views to identify dirty data
 CREATE OR REPLACE VIEW `diabetes_dwh_staging`.`dirty_patient_race` AS
 SELECT `patient_nbr`, count(distinct `race`) as `race_count`
-FROM `diabetes_dwh_staging`.`dataset`
+FROM `diabetes_dwh_staging`.`dataset_modified`
 group by `patient_nbr` having `race_count` > 1;
 
 SELECT count(`patient_nbr`)
 FROM `diabetes_dwh_staging`.`dirty_patient_race`;
 
 SELECT `encounter_id`, `patient_nbr`, `race`
-FROM `diabetes_dwh_staging`.`dataset`
+FROM `diabetes_dwh_staging`.`dataset_modified`
 WHERE `patient_nbr` in (
 	SELECT `patient_nbr`
     FROM `diabetes_dwh_staging`.`dirty_patient_race`
 )
 ORDER BY `patient_nbr`, `encounter_id`;
 ```
-There were 167 dirty records with 51 patients and cleaned with selecting most frequent and latest data.
+
+There are 165 dirty records with 50 patients and cleaned with selecting most frequent and latest data.
+
 ```sql
 -- Set race as Caucasian
-UPDATE `diabetes_dwh_staging`.`dataset`
+UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `race` = 'Caucasian'
 WHERE `patient_nbr` IN (1553220, 23724792, 38893887, 42246738, 52316388, 112367349);
 
 -- Set race as AfricanAmerican
-UPDATE `diabetes_dwh_staging`.`dataset`
+UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `race` = 'AfricanAmerican'
 WHERE `patient_nbr` IN (6919587, 10980891, 40090752, 54643194, 101753730, 107849052);
 
 -- Set race as Other
-UPDATE `diabetes_dwh_staging`.`dataset`
+UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `race` = 'Other'
 WHERE `patient_nbr` IN (28532295, 30689766, 32314608, 33247647, 36967347, 37547937, 37638306, 38774187, 39160719, 42096384, 90817893, 93105117, 93662784, 94027644, 98584524, 100322946, 103228398, 103690161, 105125598, 106425234);
 
 -- Set race as Asian
-UPDATE `diabetes_dwh_staging`.`dataset`
+UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `race` = 'Asian'
 WHERE `patient_nbr` IN (24332220, 31812075, 34248078, 94539465, 97024806, 103305528, 104622570, 110657970, 111534210);
 
 -- Set race as Hispanic
-UPDATE `diabetes_dwh_staging`.`dataset`
+UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `race` = 'Hispanic'
 WHERE `patient_nbr` IN (37572957, 44744166, 45113778, 90035874, 91107549, 93809358, 94088088, 98934615, 106895331, 109448541);
 ```
 
 ## Step 05 - Transforming
-Transform primary, secondary and additional diagnosis based on "**International Statistical Classification of Diseases and Related Health Problems**"
+### 5.1 Transform primary, secondary and additional diagnosis based on "**International Statistical Classification of Diseases and Related Health Problems**"
 - Visit http://icd9.chrisendres.com/index.php?action=contents for Diseases and Injuries Tabular Index
 
 Values are stored to the file **data_transforming/diseases_and_injuries_tabular_index.csv**.
@@ -436,7 +438,29 @@ Values are stored to the file **data_transforming/diseases_and_injuries_tabular_
 | 18 | SUPPLEMENTARY CLASSIFICATION OF FACTORS INFLUENCING HEALTH STATUS AND CONTACT WITH HEALTH SERVICES | V           |         1 |      89 |
 | 19 | SUPPLEMENTARY CLASSIFICATION OF EXTERNAL CAUSES OF INJURY AND POISONING                            | E           |       800 |     999 |
 
-Transforming
+### Lets load this csv file into a table.
+Replace ***<dataset_directory>*** directory in the query with the absolute path of the file. **Use '/' as path seperator.**
+```sql
+use diabetes_dwh_staging;
+
+CREATE TABLE IF NOT EXISTS `diabetes_DWH_staging`.`icd9_index` (
+  `id` INT NOT NULL COMMENT '',
+  `disease` VARCHAR(200) NOT NULL COMMENT '',
+  `code_letter` VARCHAR(10) NULL COMMENT '',
+  `code_from` INT NOT NULL COMMENT '',
+  `code_to` INT NOT NULL COMMENT '',
+  PRIMARY KEY (`id`)  COMMENT '')
+ENGINE = InnoDB;
+
+LOAD DATA INFILE '<dataset_directory>/diseases_and_injuries_tabular_index.csv'
+INTO TABLE `icd9_index`
+FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 LINES;
+```
+
+### Transforming ICD9 Details
+This query may take several time (~30 seconds) to execute.
 ```sql
 DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`TRANSFORM_ICD9`;
 DELIMITER ;;
@@ -447,7 +471,7 @@ BEGIN
 DECLARE n INT DEFAULT 0;
 DECLARE i INT DEFAULT 0;
 
--- Transform other values (starts with V and E)
+-- Transform values starts with V and E
 -- Transform "diag_1" values
 UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `diag_1` = (
@@ -733,62 +757,13 @@ SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_diagnosis`;
 ```
 
 ### 6.4 Loading to Admission Junk Dimension
-This query may take several miniutes (~10min) to execute and may produce 12375 rows.
+Lets load all distinct values for the junk dimension.
+There are 717 distict values with including NULL values.
 
 ```sql
-DROP PROCEDURE IF EXISTS `diabetes_dwh`.`fill_admission_details_junk`;
-DELIMITER ;;
-
-CREATE PROCEDURE `diabetes_dwh`.`fill_admission_details_junk`()
-BEGIN
-
-DECLARE m INT DEFAULT 0;
-DECLARE n INT DEFAULT 0;
-DECLARE o INT DEFAULT 0;
-DECLARE i INT DEFAULT 0;
-DECLARE j INT DEFAULT 0;
-DECLARE k INT DEFAULT 0;
-
-DECLARE `type` VARCHAR(200);
-DECLARE `source` VARCHAR(200);
-DECLARE `med_spec` VARCHAR(200);
-
-CREATE OR REPLACE VIEW `diabetes_DWH_staging`.`medical_specialty` AS
-SELECT DISTINCT `medical_specialty` FROM `diabetes_dwh_staging`.`dataset`;
-
-SET m = (SELECT COUNT(*) FROM `diabetes_DWH_staging`.`admission_type`);
-SET n = (SELECT COUNT(*) FROM `diabetes_DWH_staging`.`admission_source`);
-SET o = (SELECT COUNT(*) FROM `diabetes_DWH_staging`.`medical_specialty`);
-DELETE FROM `diabetes_dwh`.`dim_junk_admissionDetails`;
-
-WHILE i < m DO
-	SET j = 0;
-    SELECT `description` FROM `diabetes_DWH_staging`.`admission_type` LIMIT i, 1 INTO `type`;
-    
-	WHILE j < n DO
-		SET k = 0;
-		SELECT `description` FROM `diabetes_DWH_staging`.`admission_source` LIMIT j, 1 INTO `source`;
-        
-		WHILE k < o DO
-			SELECT `medical_specialty` FROM `diabetes_DWH_staging`.`medical_specialty` LIMIT k, 1 INTO `med_spec`;
-        
-			INSERT INTO `diabetes_dwh`.`dim_junk_admissionDetails`
-				(`admission_type`, `admission_source`, `medical_speciality`)
-            VALUES (`type`, `source`, `med_spec`);
-            
-			SET k = k + 1;
-		END WHILE;
-        
-        SET j = j + 1;
-	END WHILE;
-    
-    SET i = i + 1;
-END WHILE;
-
-END;;
-
-DELIMITER ;
-CALL `diabetes_dwh`.`fill_admission_details_junk`();
+INSERT INTO `diabetes_dwh`.`dim_junk_admissionDetails` (`admission_type`, `admission_source`, `medical_speciality`)
+SELECT DISTINCT `admission_type`, `admission_source`, `medical_specialty`
+FROM `diabetes_dwh_staging`.`dataset_modified`;
 
 SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_admissionDetails`;
 ```

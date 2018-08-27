@@ -7,7 +7,7 @@ BEGIN
 DECLARE n INT DEFAULT 0;
 DECLARE i INT DEFAULT 0;
 
--- Transform other values (starts with V and E)
+-- Transform values starts with V and E
 -- Transform "diag_1" values
 UPDATE `diabetes_dwh_staging`.`dataset_modified`
 SET `diag_1` = (
