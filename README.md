@@ -140,110 +140,8 @@ LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES;
 ```
 
-## Step 03 - Create Schema for Data Warehouse
-Exucute following query to create database and tables for Data Warehouse as in the Dimensional Model
-
-```sql
-DROP SCHEMA IF EXISTS `diabetes_dwh` ;
-
-CREATE SCHEMA IF NOT EXISTS `diabetes_dwh` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;
-USE `diabetes_dwh` ;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_patient` (
-  `patient_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `patient_number` VARCHAR(45) NOT NULL COMMENT '',
-  `race` VARCHAR(45) NULL COMMENT '',
-  `gender` VARCHAR(45) NULL COMMENT '',
-  `age` VARCHAR(45) NULL COMMENT '',
-  PRIMARY KEY (`patient_sk`)  COMMENT '')
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_junk_admissionDetails` (
-  `admissionDetail_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `admission_type` VARCHAR(200) NULL COMMENT '',
-  `admission_source` VARCHAR(200) NULL COMMENT '',
-  `medical_speciality` VARCHAR(200) NULL COMMENT '',
-  PRIMARY KEY (`admissionDetail_sk`)  COMMENT '')
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_discharge` (
-  `discharge_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `discharge_disposition` VARCHAR(45) NULL COMMENT '',
-  `readmitted` VARCHAR(45) NULL COMMENT '',
-  `payer_code` VARCHAR(45) NULL COMMENT '',
-  PRIMARY KEY (`discharge_sk`)  COMMENT '')
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_test_results` (
-  `test_results_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `glucose_serum_test_result` VARCHAR(45) NULL COMMENT '',
-  `a1c_test_results` VARCHAR(45) NULL COMMENT '',
-  PRIMARY KEY (`test_result_sk`)  COMMENT '')
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_medication` (
-  `medication_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `change_of_medication` VARCHAR(45) NULL COMMENT '',
-  `diabetes_medicatin` VARCHAR(45) NULL COMMENT '',
-  `metformin` VARCHAR(45) NULL COMMENT '',
-  `repaglinide` VARCHAR(45) NULL COMMENT '',
-  `nateglinide` VARCHAR(45) NULL COMMENT '',
-  `chlorpropamide` VARCHAR(45) NULL COMMENT '',
-  `glimepiride` VARCHAR(45) NULL COMMENT '',
-  `acetohexamide` VARCHAR(45) NULL COMMENT '',
-  `glipizide` VARCHAR(45) NULL COMMENT '',
-  `tolbutamide` VARCHAR(45) NULL COMMENT '',
-  `pioglitazone` VARCHAR(45) NULL COMMENT '',
-  `rosiglitazone` VARCHAR(45) NULL COMMENT '',
-  `acarbose` VARCHAR(45) NULL COMMENT '',
-  `miglitol` VARCHAR(45) NULL COMMENT '',
-  `troglitazone` VARCHAR(45) NULL COMMENT '',
-  `tolazamide` VARCHAR(45) NULL COMMENT '',
-  `examide` VARCHAR(45) NULL COMMENT '',
-  `citoglipton` VARCHAR(45) NULL COMMENT '',
-  `insulin` VARCHAR(45) NULL COMMENT '',
-  `glyburide-metformin` VARCHAR(45) NULL COMMENT '',
-  `glipizide-metformin` VARCHAR(45) NULL COMMENT '',
-  `glimepiride-pioglitazone` VARCHAR(45) NULL COMMENT '',
-  `metformin-rosiglitazone` VARCHAR(45) NULL COMMENT '',
-  `metformin-pioglitazone` VARCHAR(45) NULL COMMENT '',
-  PRIMARY KEY (`medication_sk`)  COMMENT '')
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_junk_diagnosis` (
-  `diagnosis_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `primary_diagnosis` VARCHAR(200) NULL COMMENT '',
-  `secondary_diagnosis` VARCHAR(200) NULL COMMENT '',
-  `additional_diagnosis` VARCHAR(200) NULL COMMENT '',
-  PRIMARY KEY (`diagnosis_sk`)  COMMENT '')
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`fact_admission` (
-  `encounter_id` INT NOT NULL AUTO_INCREMENT COMMENT '',
-  `patient_sk` INT NOT NULL COMMENT '',
-  `test_sk` INT NOT NULL COMMENT '',
-  `medication_sk` INT NOT NULL COMMENT '',
-  `diagnosis_sk` INT NOT NULL COMMENT '',
-  `date_sk` DATETIME NOT NULL COMMENT '',
-  `time_in_hospital` VARCHAR(45) NULL COMMENT '',
-  `num_lab_procedure` INT NULL COMMENT '',
-  `num_procedures` INT NULL COMMENT '',
-  `num_medication` INT NULL COMMENT '',
-  `number_outpatient` INT NULL COMMENT '',
-  `number_emergency` INT NULL COMMENT '',
-  `number_inpatient` INT NULL COMMENT '',
-  `number_diagnoses` INT NULL COMMENT '',
-  PRIMARY KEY (`encounter_id`)  COMMENT '',
-  UNIQUE INDEX `patient_sk_UNIQUE` (`patient_sk` ASC)  COMMENT '',
-  UNIQUE INDEX `test_sk_UNIQUE` (`test_sk` ASC)  COMMENT '',
-  UNIQUE INDEX `medication_sk_UNIQUE` (`medication_sk` ASC)  COMMENT '',
-  UNIQUE INDEX `diagnosis_sk_UNIQUE` (`diagnosis_sk` ASC)  COMMENT '',
-  UNIQUE INDEX `date_sk_UNIQUE` (`date_sk` ASC)  COMMENT '')
-ENGINE = InnoDB;
-```
-
-## Step 04 - Data Cleansing
-### 4.1 Create a duplicate data set to make changes
+## Step 03 - Data Cleansing
+### 3.1 Create a duplicate data set to make changes
 ```sql
 CREATE TABLE IF NOT EXISTS `diabetes_DWH_staging`.`dataset_modified` (
   `encounter_id` INT NULL COMMENT '',
@@ -410,8 +308,8 @@ SET `race` = 'Hispanic'
 WHERE `patient_nbr` IN (37572957, 44744166, 45113778, 90035874, 91107549, 93809358, 94088088, 98934615, 106895331, 109448541);
 ```
 
-## Step 05 - Transforming
-### 5.1 Transform primary, secondary and additional diagnosis based on "**International Statistical Classification of Diseases and Related Health Problems**"
+## Step 04 - Transforming
+### 4.1 Transform primary, secondary and additional diagnosis based on "**International Statistical Classification of Diseases and Related Health Problems**"
 - Visit http://icd9.chrisendres.com/index.php?action=contents for Diseases and Injuries Tabular Index
 
 Values are stored to the file **data_transforming/diseases_and_injuries_tabular_index.csv**.
@@ -597,7 +495,8 @@ DELIMITER ;
 CALL `diabetes_dwh_staging`.`TRANSFORM_ICD9`();
 ```
 
-Transform **Admission Type, Discharge Disposition, Admission Source** with given mapping data set. One procedure will takes around 30 seconds to execute.
+### 4.2 Transform **Admission Type, Discharge Disposition, Admission Source** with given mapping data set.
+One procedure will takes around 15 seconds to execute with all take around 45 seconds.
 
 ```sql
 DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_TYPE`;
@@ -685,6 +584,108 @@ CALL `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_TYPE`();
 CALL `diabetes_dwh_staging`.`TRANSFORM_ADMISSION_SOURCE`();
 CALL `diabetes_dwh_staging`.`TRANSFORM_DISCHARGE_DISPOSITION`();
 
+```
+
+## Step 05 - Create Schema for Data Warehouse
+Exucute following query to create database and tables for Data Warehouse as in the Dimensional Model
+
+```sql
+DROP SCHEMA IF EXISTS `diabetes_dwh` ;
+
+CREATE SCHEMA IF NOT EXISTS `diabetes_dwh` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci ;
+USE `diabetes_dwh` ;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_patient` (
+  `patient_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `patient_number` VARCHAR(45) NOT NULL COMMENT '',
+  `race` VARCHAR(45) NULL COMMENT '',
+  `gender` VARCHAR(45) NULL COMMENT '',
+  `age` VARCHAR(45) NULL COMMENT '',
+  PRIMARY KEY (`patient_sk`)  COMMENT '')
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_junk_admissionDetails` (
+  `admissionDetail_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `admission_type` VARCHAR(200) NULL COMMENT '',
+  `admission_source` VARCHAR(200) NULL COMMENT '',
+  `medical_speciality` VARCHAR(200) NULL COMMENT '',
+  PRIMARY KEY (`admissionDetail_sk`)  COMMENT '')
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_discharge` (
+  `discharge_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `discharge_disposition` VARCHAR(45) NULL COMMENT '',
+  `readmitted` VARCHAR(45) NULL COMMENT '',
+  `payer_code` VARCHAR(45) NULL COMMENT '',
+  PRIMARY KEY (`discharge_sk`)  COMMENT '')
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_test_results` (
+  `test_results_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `glucose_serum_test_result` VARCHAR(45) NULL COMMENT '',
+  `a1c_test_results` VARCHAR(45) NULL COMMENT '',
+  PRIMARY KEY (`test_result_sk`)  COMMENT '')
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_medication` (
+  `medication_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `change_of_medication` VARCHAR(45) NULL COMMENT '',
+  `diabetes_medicatin` VARCHAR(45) NULL COMMENT '',
+  `metformin` VARCHAR(45) NULL COMMENT '',
+  `repaglinide` VARCHAR(45) NULL COMMENT '',
+  `nateglinide` VARCHAR(45) NULL COMMENT '',
+  `chlorpropamide` VARCHAR(45) NULL COMMENT '',
+  `glimepiride` VARCHAR(45) NULL COMMENT '',
+  `acetohexamide` VARCHAR(45) NULL COMMENT '',
+  `glipizide` VARCHAR(45) NULL COMMENT '',
+  `tolbutamide` VARCHAR(45) NULL COMMENT '',
+  `pioglitazone` VARCHAR(45) NULL COMMENT '',
+  `rosiglitazone` VARCHAR(45) NULL COMMENT '',
+  `acarbose` VARCHAR(45) NULL COMMENT '',
+  `miglitol` VARCHAR(45) NULL COMMENT '',
+  `troglitazone` VARCHAR(45) NULL COMMENT '',
+  `tolazamide` VARCHAR(45) NULL COMMENT '',
+  `examide` VARCHAR(45) NULL COMMENT '',
+  `citoglipton` VARCHAR(45) NULL COMMENT '',
+  `insulin` VARCHAR(45) NULL COMMENT '',
+  `glyburide-metformin` VARCHAR(45) NULL COMMENT '',
+  `glipizide-metformin` VARCHAR(45) NULL COMMENT '',
+  `glimepiride-pioglitazone` VARCHAR(45) NULL COMMENT '',
+  `metformin-rosiglitazone` VARCHAR(45) NULL COMMENT '',
+  `metformin-pioglitazone` VARCHAR(45) NULL COMMENT '',
+  PRIMARY KEY (`medication_sk`)  COMMENT '')
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`dim_junk_diagnosis` (
+  `diagnosis_sk` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `primary_diagnosis` VARCHAR(200) NULL COMMENT '',
+  `secondary_diagnosis` VARCHAR(200) NULL COMMENT '',
+  `additional_diagnosis` VARCHAR(200) NULL COMMENT '',
+  PRIMARY KEY (`diagnosis_sk`)  COMMENT '')
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `diabetes_dwh`.`fact_admission` (
+  `encounter_id` INT NOT NULL AUTO_INCREMENT COMMENT '',
+  `patient_sk` INT NOT NULL COMMENT '',
+  `test_sk` INT NOT NULL COMMENT '',
+  `medication_sk` INT NOT NULL COMMENT '',
+  `diagnosis_sk` INT NOT NULL COMMENT '',
+  `date_sk` DATETIME NOT NULL COMMENT '',
+  `time_in_hospital` VARCHAR(45) NULL COMMENT '',
+  `num_lab_procedure` INT NULL COMMENT '',
+  `num_procedures` INT NULL COMMENT '',
+  `num_medication` INT NULL COMMENT '',
+  `number_outpatient` INT NULL COMMENT '',
+  `number_emergency` INT NULL COMMENT '',
+  `number_inpatient` INT NULL COMMENT '',
+  `number_diagnoses` INT NULL COMMENT '',
+  PRIMARY KEY (`encounter_id`)  COMMENT '',
+  UNIQUE INDEX `patient_sk_UNIQUE` (`patient_sk` ASC)  COMMENT '',
+  UNIQUE INDEX `test_sk_UNIQUE` (`test_sk` ASC)  COMMENT '',
+  UNIQUE INDEX `medication_sk_UNIQUE` (`medication_sk` ASC)  COMMENT '',
+  UNIQUE INDEX `diagnosis_sk_UNIQUE` (`diagnosis_sk` ASC)  COMMENT '',
+  UNIQUE INDEX `date_sk_UNIQUE` (`date_sk` ASC)  COMMENT '')
+ENGINE = InnoDB;
 ```
 
 ## Step 06 - Loading Data
