@@ -9,7 +9,7 @@ SELECT 'race', 'gender', 'age', 'admission_type',
     'glipizide-metformin', 'glimepiride-pioglitazone', 'metformin-rosiglitazone',
     'metformin-pioglitazone', 'change', 'diabetesMed', 'readmitted'
 UNION
-SELECT `race`, `gender`, `age`, `admission_type`,
+SELECT `race`, `gender`, `age_int`, `admission_type`,
 	`discharge_disposition`, `admission_source`, `time_in_hospital`, `payer_code`,
     `medical_specialty`, `num_lab_procedures`, `num_procedures`, `num_medications`,
     `number_outpatient`, `number_emergency`, `number_inpatient`, `diag_1`, `diag_2`,

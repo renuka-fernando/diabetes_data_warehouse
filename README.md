@@ -766,8 +766,44 @@ SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_admissionDetails`;
 ```
 
 ### 6.7 Loading to Fact
+```sql
+
+```
 
 # Data Mining
+## Transforming for Data Mining
+Transform age to an integer value. (eg transform "[40-50)" to 45)
+```sql
+DROP PROCEDURE IF EXISTS `diabetes_dwh_staging`.`transform_for_datamining`;
+DELIMITER ;;
+
+CREATE PROCEDURE `diabetes_dwh_staging`.`transform_for_datamining`()
+BEGIN
+
+DECLARE i INT DEFAULT 0;
+DECLARE age_str VARCHAR(10);
+DECLARE age_str_int INT;
+
+ALTER TABLE `diabetes_dwh_staging`.`dataset_modified`
+ADD COLUMN `age_int` INT;
+
+WHILE i < 10 DO
+	SET age_str = CONCAT('[', i * 10, '-', (i+1) * 10, ')');
+    SET age_str_int = i * 10 + 5;
+    
+    UPDATE `diabetes_dwh_staging`.`dataset_modified`
+    SET `age_int` = age_str_int
+    WHERE `age` = age_str;
+    
+    SET i = i+1;
+END WHILE;
+
+END;;
+
+DELIMITER ;
+CALL `diabetes_dwh_staging`.`transform_for_datamining`();
+```
+
 ## Export CSV file for Data Mining
 Lets export `diabetes_dwh_staging`.`dataset_modified` table to csv file. Then it can be used with **weka** for data mining.
 Replace ***<dataset_directory>*** directory in the query with the absolute path of the file. **Use '/' as path seperator.**
@@ -783,7 +819,7 @@ SELECT 'race', 'gender', 'age', 'admission_type',
     'glipizide-metformin', 'glimepiride-pioglitazone', 'metformin-rosiglitazone',
     'metformin-pioglitazone', 'change', 'diabetesMed', 'readmitted'
 UNION
-SELECT `race`, `gender`, `age`, `admission_type`,
+SELECT `race`, `gender`, `age_int`, `admission_type`,
 	`discharge_disposition`, `admission_source`, `time_in_hospital`, `payer_code`,
     `medical_specialty`, `num_lab_procedures`, `num_procedures`, `num_medications`,
     `number_outpatient`, `number_emergency`, `number_inpatient`, `diag_1`, `diag_2`,
@@ -794,7 +830,9 @@ SELECT `race`, `gender`, `age`, `admission_type`,
     `glipizide-metformin`, `glimepiride-pioglitazone`, `metformin-rosiglitazone`,
     `metformin-pioglitazone`, `change`, `diabetesMed`, `readmitted`
 FROM `diabetes_dwh_staging`.`dataset_modified`
-INTO OUTFILE '<>/data_set.csv'
+INTO OUTFILE 'D:/data_set.csv'
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n';
 ```
+
+Now we can import this data set to Weka.
