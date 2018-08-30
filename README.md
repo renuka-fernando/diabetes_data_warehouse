@@ -10,6 +10,7 @@ Attribute Info - https://www.hindawi.com/journals/bmri/2014/781670/tab1/
 ![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design.png)
 
 # Build Data Warehouse
+![Process](process.png)
 
 ## ETL Document
 
