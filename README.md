@@ -10,6 +10,8 @@ Attribute Info - https://www.hindawi.com/journals/bmri/2014/781670/tab1/
 ![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design.png)
 
 # Build Data Warehouse
+![Process](process.png)
+
 ## Step 01 - Create Schema for Staging Area
 Use following query to create the database named '*diabetes_dwh_staging*' and tables.
 - Database: diabetes_dwh_staging
