@@ -808,7 +808,19 @@ SELECT COUNT(*) FROM `diabetes_dwh`.`dim_junk_admissionDetails`;
 
 ### 6.7 Loading to Fact
 ```sql
-
+SELECT `stg`.`encounter_id`,
+	`patient`.`patient_sk`, `test`.`test_results_sk`,
+    `stg`.`time_in_hospital`, `stg`.`num_lab_procedures`
+FROM `diabetes_dwh_staging`.`dataset_modified` as `stg`,
+	`diabetes_dwh`.`dim_patient` as `patient`, 
+    `diabetes_dwh`.`dim_test_results` as `test`,
+    `diabetes_dwh`.`dim_discharge` as `discharge`,
+    `diabetes_dwh`.`dim_medication` as `medication`,
+    `diabetes_dwh`.`dim_junk_diagnosis` as `diag`,
+    `diabetes_dwh`.`dim_junk_admissionDetails` as `adm_details`
+WHERE `stg`.`patient_nbr` = `patient`.`patient_number` AND `stg`.`age` = `patient`.`age`
+	AND `test`.`glucose_serum_test_result` = `stg`.`max_glu_serum` AND `test`.`a1c_test_results` = `stg`.`A1Cresult`
+    AND `stg`.`discharge`.`discharge_disposition` = `discharge_disposition` AND `stg`.`readmitted` = `discharge`.`readmitted` AND `srg`.`payer_code` = `discharge`.`payer_code`;
 ```
 
 # Data Mining
