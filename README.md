@@ -2,10 +2,6 @@
 Dataset URL - https://archive.ics.uci.edu/ml/datasets/Diabetes+130-US+hospitals+for+years+1999-2008
 Attribute Info - https://www.hindawi.com/journals/bmri/2014/781670/tab1/
 
-## Files
-- data_warehouse.mwb - MySQL Workbench model file
-- dimensional_modeling/dimentional_design.xml - Draw.io file
-
 # Dimensional Model
 ![Dimensional Model of Data Warehouse](dimensional_modeling/dimentional_design.png)
 
