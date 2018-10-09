@@ -1,6 +1,15 @@
 MIT License
 
-Copyright (c) 2018 Renuka Piyumal Fernando
+COPYRIGHT
+
+All contributions by Renuka Fernando:
+Copyright (c) 2018 Renuka Fernando.
+
+All contributions by Jayathma Chathurangani:
+Copyright (c) 2018 Jayathma Chathurangani.
+
+All contributions by Piyushani Sewwandi:
+Copyright (c) 2018 Piyushani Sewwandi.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
